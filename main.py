@@ -1,9 +1,11 @@
+from threading import Thread
 import os
 import sqlite3
 import logging
 from telegram import Update
 from telegram.ext import ApplicationBuilder, ContextTypes, MessageHandler, CommandHandler, filters
 import google.generativeai as genai
+from flask import Flask
 
 # Logging setup
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
@@ -180,7 +182,7 @@ async def ban_user(update: Update, context: ContextTypes.DEFAULT_TYPE):
 # --- OTHER COMMANDS ---
 async def set_rule(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_user.id != OWNER_ID:
-        await update.message.reply_text("⛔ ဒီ ትوام်ကို ပိုင်ရှင် (Owner) သာ အသုံးပြုနိုင်ပါသည်။")
+        await update.message.reply_text("⛔ ဒီ ဥပဒေသကို ပိုင်ရှင် (Owner) သာ အသုံးပြုနိုင်ပါသည်။")
         return
     
     new_rule = " ".join(context.args)
@@ -197,7 +199,23 @@ async def status_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     role = get_user_role(user_id)
     await update.message.reply_text(f"👤 your current role status is: **{role.upper()}**")
 
+# --- FLASK APP FOR RENDER PORT BINDING ---
+app_web = Flask(__name__)
+
+@app_web.route('/')
+def home():
+    return "Telegram Bot is running smoothly!"
+
+def run_web():
+    app_web.run(host='0.0.0.0', port=10000)
+
 def main():
+    # Render အတွက် Port 10000 ကို Background မှာ စတင်ပေးခြင်း
+    web_thread = Thread(target=run_web)
+    web_thread.daemon = True
+    web_thread.start()
+
+    # Telegram Bot Application Setup
     app = ApplicationBuilder().token(TELEGRAM_TOKEN).build()
 
     app.add_handler(CommandHandler("setrule", set_rule))
