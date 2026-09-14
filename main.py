@@ -26,7 +26,7 @@ cursor.execute('''CREATE TABLE IF NOT EXISTS admins (user_id INTEGER PRIMARY KEY
 conn.commit()
 
 # Owner ID setup (သင့်ရဲ့ Telegram User ID ထည့်ပါ)
-OWNER_ID = 123456789  # <--- ကိုယ့်ရဲ့ Telegram ID အမှန်ကို ဒီမှာထည့်ပါ
+OWNER_ID = 7094887417  # <--- ကိုယ့်ရဲ့ Telegram ID အမှန်ကို ဒီမှာထည့်ပါ
 
 # Helper Functions for Permissions
 def get_user_role(user_id):
