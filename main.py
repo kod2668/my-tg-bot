@@ -6,7 +6,6 @@ from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes
 from groq import Groq
 
-# Render Port 10000 Dummy Web Server
 class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
     def do_GET(self):
         self.send_response(200)
@@ -26,11 +25,9 @@ groq_client = Groq(api_key=GROQ_API_KEY)
 
 OWNER_ID = 7094887417  
 
-# --- SQLite Database Setup ---
 def init_db():
     conn = sqlite3.connect("bot_data.db")
     cursor = conn.cursor()
-    # ဇယားများ ဖန်တီးခြင်း
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS settings (
             key TEXT PRIMARY KEY,
@@ -45,7 +42,6 @@ def init_db():
     """)
     conn.commit()
     
-    # ပုံသေ System Rule မရှိသေးရင် ထည့်ရန်
     cursor.execute("SELECT value FROM settings WHERE key='rule'")
     if not cursor.fetchone():
         default_rule = "You are my private AI assistant. You must strictly follow my commands."
@@ -55,7 +51,6 @@ def init_db():
 
 init_db()
 
-# Database ထဲမှ စည်းမျဉ်းကို လှမ်းယူရန်
 def get_current_rule():
     conn = sqlite3.connect("bot_data.db")
     cursor = conn.cursor()
@@ -64,7 +59,6 @@ def get_current_rule():
     conn.close()
     return row[0] if row else ""
 
-# Database ထဲသို့ စည်းမျဉ်းအသစ် သိမ်းရန်
 def update_current_rule(new_rule):
     conn = sqlite3.connect("bot_data.db")
     cursor = conn.cursor()
@@ -72,7 +66,6 @@ def update_current_rule(new_rule):
     conn.commit()
     conn.close()
 
-# User တစ်ဦး၏ Role ကို စစ်ဆေးရန် (vip, banned, normal)
 def get_user_role(user_id):
     if user_id == OWNER_ID:
         return "owner"
@@ -83,7 +76,6 @@ def get_user_role(user_id):
     conn.close()
     return row[0] if row else "normal"
 
-# User Role သတ်မှတ်ရန်
 def set_user_role(user_id, role):
     conn = sqlite3.connect("bot_data.db")
     cursor = conn.cursor()
@@ -123,7 +115,7 @@ async def add_vip(update: Update, context: ContextTypes.DEFAULT_TYPE):
         set_user_role(target_id, "vip")
         await update.message.reply_text(f"⭐ User ID: {target_id} ကို VIP သို့ ပြောင်းလိုက်ပါပြီ။")
     except Exception:
-        await.message.reply_text("မှားယွင်းနေပါသည်။ /addvip [id] ဖြင့်သုံးပါ။")
+        await update.message.reply_text("မှားယွင်းနေပါသည်။ /addvip [id] ဖြင့်သုံးပါ။")
 
 async def ban_user(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if get_user_role(update.effective_user.id) not in ["owner", "admin"]:
@@ -150,7 +142,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         truncated_text = user_text[:3000] if user_text else ""
 
         completion = groq_client.chat.completions.create(
-            model="openai/gpt-oss-20b",
+            model="llama-3.1-8b-instant",
             messages=[
                 {"role": "system", "content": current_rule},
                 {"role": "user", "content": truncated_text}
@@ -177,3 +169,4 @@ if __name__ == "__main__":
     
     print("Bot is polling with Database...")
     app.run_polling()
+
