@@ -34,13 +34,14 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_text = update.message.text
     try:
         completion = groq_client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
+            model="llama-3.1-8b-instant",  # Model နာမည်အသစ် ပြောင်းထားသည်
             messages=[{"role": "user", "content": user_text}]
         )
         reply_text = completion.choices[0].message.content
         await update.message.reply_text(reply_text)
     except Exception as e:
-        await update.message.reply_text("တောင်းပန်ပါတယ်၊ အကြောင်းပြန်ရာတွင် အမှားတစ်ခု ဖြစ်ပေါ်ခဲ့ပါတယ်။")
+        print(f"Groq API Error Details: {e}")  # Render Logs ထဲတွင် Error အမှန်ကို ပြရန်
+        await update.message.reply_text(f"Error: {e}") # Telegram ထဲတွင် Error အမှန်ကို တိုက်ရိုက်ပြရန်
 
 if __name__ == "__main__":
     app = ApplicationBuilder().token(TELEGRAM_TOKEN).build()
