@@ -17,7 +17,7 @@ GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 # Configure Gemini
 genai.configure(api_key=GEMINI_API_KEY)
 # ပိုမိုတည်ငြိမ်သော gemini-pro မော်ဒယ်သို့ ပြောင်းလဲထားပါသည်
-model = genai.GenerativeModel('gemini-3.8-flash')
+model = genai.GenerativeModel('gemini-1.5-flash')
 
 # Database setup
 conn = sqlite3.connect('bot_database.db', check_same_thread=False)
