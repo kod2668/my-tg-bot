@@ -1,12 +1,12 @@
 import os
 import threading
 import sqlite3
+import base64
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes
 from groq import Groq
 
-# Render က Port တောင်းဆိုမှုကို ဖြေကြားရန် Dummy Web Server
 class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
     def do_GET(self):
         self.send_response(200)
@@ -26,7 +26,6 @@ groq_client = Groq(api_key=GROQ_API_KEY)
 
 OWNER_ID = 7094887417  
 
-# --- SQLite Database Setup ---
 def init_db():
     conn = sqlite3.connect("bot_data.db")
     cursor = conn.cursor()
@@ -44,7 +43,6 @@ def init_db():
     """)
     conn.commit()
     
-    # ပုံသေ System Rule မရှိသေးရင် ထည့်ရန်
     cursor.execute("SELECT value FROM settings WHERE key='rule'")
     if not cursor.fetchone():
         default_rule = "You are my private AI assistant. You must strictly follow my commands."
@@ -96,37 +94,33 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     if user.id == OWNER_ID:
         await update.message.reply_text(
-            "မင်္ဂလာပါ Boss! Database စနစ်ဖြင့် အောင်မြင်စွာ ချိတ်ဆက်ပြီးပါပြီ။ 👑\n\n"
+            "မင်္ဂလာပါ Boss! Database နှင့် Vision (ဓာတ်ပုံဖတ်ခြင်း) စနစ်ပါ အောင်မြင်စွာ ချိတ်ဆက်ပြီးပါပြီ။ 👑\n\n"
             "🛠 **Owner Commands:**\n"
-            "👉 `/setrule [AI လိုက်နာရမယ့် စည်းကမ်းအသစ်]` - AI ၏ ပုံစံ/စည်းကမ်းကို ချက်ချင်းပြောင်းရန်\n"
-            "👉 `/addvip [user_id]` - User တစ်ဦးကို VIP သတ်မှတ်ရန်\n"
-            "👉 `/ban [user_id]` - User တစ်ဦးကို ပိတ်ရန်\n"
-            "👉 `/status` - မိမိ၏ User Status ကို စစ်ဆေးရန်",
+            "👉 `/setrule [စည်းကမ်းအသစ်]` - AI စည်းကမ်းပြောင်းရန်\n"
+            "👉 `/addvip [user_id]` - VIP သတ်မှတ်ရန်\n"
+            "👉 `/ban [user_id]` - User ပိတ်ရန်\n"
+            "👉 `/status` - Status စစ်ဆေးရန်",
             parse_mode="Markdown"
         )
     else:
-        await update.message.reply_text(f"မင်္ဂလာပါ။ သင်၏အဆင့်မှာ [{role.upper()}] ဖြစ်ပါသည်။ Status စစ်ဆေးရန် `/status` ဟု ရိုက်ပါ။")
+        await update.message.reply_text(f"မင်္ဂလာပါ။ သင်၏အဆင့်မှာ [{role.upper()}] ဖြစ်ပါသည်။ စာများနှင့် ဓာတ်ပုံများ ပို့နိုင်ပါပြီ။")
 
 async def set_rule(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_user.id != OWNER_ID:
-        await update.message.reply_text("ဤ Command ကို Owner သာ အသုံးပြုနိုင်ပါသည်။")
+        await update.message.reply_text("Owner သာ ပြုလုပ်နိုင်ပါသည်။")
         return
     if not context.args:
-        await update.message.reply_text(f"လက်ရှိ စည်းမျဉ်း:\n`{get_current_rule()}`\n\nပြောင်းရန် ဥပမာ - `/setrule You must reply only in Myanmar language.`", parse_mode="Markdown")
+        await update.message.reply_text(f"လက်ရှိ စည်းမျဉ်း:\n`{get_current_rule()}`", parse_mode="Markdown")
         return
     
     new_rule = " ".join(context.args)
     update_current_rule(new_rule)
-    await update.message.reply_text(f"✅ AI ၏ စည်းမျဉ်းအသစ်ကို Database ထဲသို့ အောင်မြင်စွာ သိမ်းဆည်းလိုက်ပါပြီ:\n\n`{new_rule}`", parse_mode="Markdown")
+    await update.message.reply_text(f"✅ စည်းမျဉ်းအသစ်ကို သိမ်းဆည်းပြီးပါပြီ။")
 
 async def add_vip(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if get_user_role(update.effective_user.id) not in ["owner", "admin"]:
-        await update.message.reply_text("ခွင့်ပြုချက်မရှိပါ။")
         return
     try:
-        if not context.args:
-            await update.message.reply_text("ကျေးဇူးပြု၍ ID ထည့်ပါ။ ဥပမာ - `/addvip 123456789`")
-            return
         target_id = int(context.args[0])
         set_user_role(target_id, "vip")
         await update.message.reply_text(f"⭐ User ID: {target_id} ကို VIP သို့ ပြောင်းလိုက်ပါပြီ။")
@@ -135,15 +129,10 @@ async def add_vip(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def ban_user(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if get_user_role(update.effective_user.id) not in ["owner", "admin"]:
-        await update.message.reply_text("ခွင့်ပြုချက်မရှိပါ။")
         return
     try:
-        if not context.args:
-            await update.message.reply_text("ကျေးဇူးပြု၍ ID ထည့်ပါ။ ဥပမာ - `/ban 123456789`")
-            return
         target_id = int(context.args[0])
         if target_id == OWNER_ID:
-            await update.message.reply_text("Owner ကို Ban လို့ မရပါ။")
             return
         set_user_role(target_id, "banned")
         await update.message.reply_text(f"User ID: {target_id} ကို Ban လိုက်ပါပြီ။")
@@ -153,18 +142,15 @@ async def ban_user(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def check_my_status(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     role = get_user_role(user.id)
-    
     if user.id == OWNER_ID:
-        status_text = "👑 သင်သည် Bot ၏ ပိုင်ရှင် (Owner) ဖြစ်ပါသည်။"
+        status = "👑 Owner"
     elif role == "vip":
-        status_text = "⭐ သင်သည် VIP အဆင့် အသုံးပြုသူ ဖြစ်ပါသည်။"
-    elif role == "banned":
-        status_text = "🚫 သင့်ကို Bot အသုံးပြုခွင့် ပိတ်ပင်ထားပါသည်။"
+        status = "⭐ VIP User"
     else:
-        status_text = "👤 သင်သည် ပုံမှန် အဆင့် (Normal User) ဖြစ်ပါသည်။"
-        
-    await update.message.reply_text(f"📊 **User Status Info**\n\nID: `{user.id}`\nName: {user.first_name}\nStatus: {status_text}", parse_mode="Markdown")
+        status = "👤 Normal User"
+    await update.message.reply_text(f"Status: {status}")
 
+# စာသားနှင့် ဓာတ်ပုံများကိုပါ တစ်ပါတည်း လက်ခံစစ်ဆေးပေးမည့် Function
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     role = get_user_role(user.id)
@@ -172,26 +158,56 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if role == "banned":
         return
 
-    user_text = update.message.text
-    try:
-        current_rule = get_current_rule()
-        truncated_text = user_text[:3000] if user_text else ""
+    current_rule = get_current_rule()
 
-        completion = groq_client.chat.completions.create(
-            model="llama-3.1-8b-instant",
-            messages=[
-                {"role": "system", "content": current_rule},
-                {"role": "user", "content": truncated_text}
-            ]
-        )
-        reply_text = completion.choices[0].message.content
-        
+    try:
+        # User က ဓာတ်ပုံ ပို့လာခြင်း ရှိမရှိ စစ်ဆေးခြင်း
+        if update.message.photo:
+            photo_file = await update.message.photo[-1].get_file()
+            photo_bytes = await photo_file.download_as_bytearray()
+            
+            base64_image = base64.b64encode(photo_bytes).decode('utf-8')
+            image_url = f"data:image/jpeg;base64,{base64_image}"
+            
+            caption_text = update.message.caption if update.message.caption else "ဒီပုံကို လေ့လာပြီး လိုအပ်သလို မှတ်ချက်ပေးပါ။"
+
+            # Groq Vision Model ကို အသုံးပြုခြင်း
+            completion = groq_client.chat.completions.create(
+                model="meta-llama/llama-4-scout-17b-16e-instruct",
+                messages=[
+                    {"role": "system", "content": current_rule},
+                    {
+                        "role": "user",
+                        "content": [
+                            {"type": "text", "text": caption_text},
+                            {"type": "image_url", "image_url": {"url": image_url}}
+                        ]
+                    }
+                ]
+            )
+            reply_text = completion.choices[0].message.content
+
+        else:
+            # ပုံမဟုတ်ဘဲ ပုံမှန်စာသား ပို့လာပါက
+            user_text = update.message.text
+            truncated_text = user_text[:3000] if user_text else ""
+            
+            completion = groq_client.chat.completions.create(
+                model="llama-3.1-8b-instant",
+                messages=[
+                    {"role": "system", "content": current_rule},
+                    {"role": "user", "content": truncated_text}
+                ]
+            )
+            reply_text = completion.choices[0].message.content
+
         if user.id == OWNER_ID:
             reply_text = f"[Boss 👑]\n{reply_text}"
         elif role == "vip":
             reply_text = f"[VIP ⭐]\n{reply_text}"
             
         await update.message.reply_text(reply_text)
+
     except Exception as e:
         print(f"Error: {e}")
         await update.message.reply_text("Error occurred while processing your request.")
@@ -204,8 +220,9 @@ if __name__ == "__main__":
     app.add_handler(CommandHandler("addvip", add_vip))
     app.add_handler(CommandHandler("ban", ban_user))
     app.add_handler(CommandHandler("status", check_my_status))
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
+    # စာသားအပြင် ဓာတ်ပုံများကိုပါ လက်ခံနိုင်ရန် filters.PHOTO ကို ထည့်သွင်းထားသည်
+    app.add_handler(MessageHandler((filters.TEXT | filters.PHOTO) & ~filters.COMMAND, handle_message))
     
-    print("Bot is polling with Database & Status Check...")
+    print("Bot is polling with Vision & Database...")
     app.run_polling()
-  
+
