@@ -27,8 +27,8 @@ cursor.execute('''CREATE TABLE IF NOT EXISTS bans (user_id INTEGER PRIMARY KEY)'
 cursor.execute('''CREATE TABLE IF NOT EXISTS admins (user_id INTEGER PRIMARY KEY, role TEXT)''')
 conn.commit()
 
-# Owner ID setup (သင့်ရဲ့ Telegram User ID ထည့်ပါ)
-OWNER_ID = 7094887417  # <--- ကိုယ့်ရဲ့ Telegram ID အမှန်ကို ဒီမှာထည့်ပါ
+# Owner ID setup
+OWNER_ID = 7094887417  # <--- ကိုယ့်ရဲ့ Telegram ID အမှန်
 
 # Helper Functions for Permissions
 def get_user_role(user_id):
@@ -45,6 +45,20 @@ def get_user_role(user_id):
         return 'vip'
         
     return 'user'
+
+# --- START COMMAND (Role အလိုက် နှုတ်ဆက်ပုံများ) ---
+async def start_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_id = update.effective_user.id
+    role = get_user_role(user_id)
+    
+    if role == 'owner':
+        await update.message.reply_text("👑 မင်္ဂလာပါ ပြန်လည်ကြိုဆိုပါတယ် Boss။")
+    elif role in ['senior', 'normal']:
+        await update.message.reply_text(f"🛡️ မင်္ဂလာပါ Admin ({role.capitalize()})၊ Xinon ရဲ့ auto system talking AI မှ ကြိုဆိုပါတယ်။")
+    elif role == 'vip':
+        await update.message.reply_text(f"⭐ ချစ်ရပါသော VIP user ({user_id})၊ Xinon ရဲ့ auto system talking AI မှ ကြိုဆိုပါတယ်။")
+    else:
+        await update.message.reply_text("Xinon ရဲ့ auto system talking AI မှ ကြိုဆိုပါတယ်။ VIP ဝင်ချင်ရင် Telegram -> @REDXinon ထံမှာ မေးမြန်းနိုင်ပါတယ်။")
 
 # --- MESSAGE HANDLER ---
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -70,10 +84,10 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         logging.error(f"Gemini Error: {e}")
         await update.message.reply_text("Error occurred while processing your request.")
 
-# --- OWNER COMMANDS (Admin အသစ်ခန့်ရန်) ---
+# --- OWNER COMMANDS ---
 async def add_admin(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_user.id != OWNER_ID:
-        await update.message.reply_text("⛔ ဤ විධාန်ကို ပိုင်ရှင် (Owner) သာ အသုံးပြုနိုင်ပါသည်။")
+        await update.message.reply_text("⛔ ဤ အမိန့်ကို ပိုင်ရှင် (Owner) သာ အသုံးပြုနိုင်ပါသည်။")
         return
     
     if len(context.args) < 2:
@@ -95,7 +109,7 @@ async def add_admin(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def remove_admin(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_user.id != OWNER_ID:
-        await update.message.reply_text("⛔ ဤ විධාန်ကို ပိုင်ရှင် (Owner) သာ အသုံးပြုနိုင်ပါသည်။")
+        await update.message.reply_text("⛔ ဤ အမိန့်ကို ပိုင်ရှင် (Owner) သာ အသုံးပြုနိုင်ပါသည်။")
         return
         
     if not context.args:
@@ -110,13 +124,13 @@ async def remove_admin(update: Update, context: ContextTypes.DEFAULT_TYPE):
     except ValueError:
         await update.message.reply_text("⚠️ User ID မှားယွင်းနေပါသည်။")
 
-# --- VIP MANAGEMENT (Owner နှင့် Senior Admin များသာ) ---
+# --- VIP MANAGEMENT ---
 async def add_vip(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     role = get_user_role(user_id)
     
     if role not in ['owner', 'senior']:
-        await update.message.reply_text("⛔ ဤ විධාန်ကို Owner နှင့် Senior Admin များသာ အသုံးပြုနိုင်ပါသည်။")
+        await update.message.reply_text("⛔ ဤ အမိန့်ကို Owner နှင့် Senior Admin များသာ အသုံးပြုနိုင်ပါသည်။")
         return
         
     if not context.args:
@@ -136,7 +150,7 @@ async def remove_vip(update: Update, context: ContextTypes.DEFAULT_TYPE):
     role = get_user_role(user_id)
     
     if role not in ['owner', 'senior']:
-        await update.message.reply_text("⛔ ဤ විධාန်ကို Owner နှင့် Senior Admin များသာ အသုံးပြုနိုင်ပါသည်။")
+        await update.message.reply_text("⛔ ဤ အမိန့်ကို Owner နှင့် Senior Admin များသာ အသုံးပြုနိုင်ပါသည်။")
         return
         
     if not context.args:
@@ -151,13 +165,13 @@ async def remove_vip(update: Update, context: ContextTypes.DEFAULT_TYPE):
     except ValueError:
         await update.message.reply_text("⚠️ User ID မှားယွင်းနေပါသည်။")
 
-# --- BAN MANAGEMENT (Admin အဆင့်အလိုက် ကန့်သတ်ချက်) ---
+# --- BAN MANAGEMENT ---
 async def ban_user(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     sender_role = get_user_role(user_id)
     
     if sender_role not in ['owner', 'senior', 'normal']:
-        await update.message.reply_text("⛔ ဤ විධාန်ကို Admin များသာ အသုံးပြုနိုင်ပါသည်။")
+        await update.message.reply_text("⛔ ဤ အမိန့်ကို Admin များသာ အသုံးပြုနိုင်ပါသည်။")
         return
         
     if not context.args:
@@ -168,7 +182,6 @@ async def ban_user(update: Update, context: ContextTypes.DEFAULT_TYPE):
         target_id = int(context.args[0])
         target_role = get_user_role(target_id)
         
-        # Normal admin can only ban normal users
         if sender_role == 'normal' and target_role in ['owner', 'senior', 'normal', 'vip']:
             await update.message.reply_text("⛔ Normal Admin သည် VIP များကိုသော်လည်းကောင်း၊ အခြား Admin များကိုသော်လည်းကောင်း Ban ခွင့်မရှိပါ။")
             return
@@ -182,7 +195,7 @@ async def ban_user(update: Update, context: ContextTypes.DEFAULT_TYPE):
 # --- OTHER COMMANDS ---
 async def set_rule(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_user.id != OWNER_ID:
-        await update.message.reply_text("⛔ ဒီ ဥပဒေသကို ပိုင်ရှင် (Owner) သာ အသုံးပြုနိုင်ပါသည်။")
+        await update.message.reply_text("⛔ ဒီ အမိန့်ကို ပိုင်ရှင် (Owner) သာ အသုံးပြုနိုင်ပါသည်။")
         return
     
     new_rule = " ".join(context.args)
@@ -197,9 +210,9 @@ async def set_rule(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def status_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     role = get_user_role(user_id)
-    await update.message.reply_text(f"👤 your current role status is: **{role.upper()}**")
+    await update.message.reply_text(f"👤 Your current role status is: **{role.upper()}**")
 
-# --- FLASK APP FOR RENDER PORT BINDING ---
+# --- FLASK WEB SERVER FOR RENDER ---
 app_web = Flask(__name__)
 
 @app_web.route('/')
@@ -210,7 +223,7 @@ def run_web():
     app_web.run(host='0.0.0.0', port=10000)
 
 def main():
-    # Render အတွက် Port 10000 ကို Background မှာ စတင်ပေးခြင်း
+    # Start Flask thread for Render port binding
     web_thread = Thread(target=run_web)
     web_thread.daemon = True
     web_thread.start()
@@ -218,6 +231,7 @@ def main():
     # Telegram Bot Application Setup
     app = ApplicationBuilder().token(TELEGRAM_TOKEN).build()
 
+    app.add_handler(CommandHandler("start", start_cmd))
     app.add_handler(CommandHandler("setrule", set_rule))
     app.add_handler(CommandHandler("addadmin", add_admin))
     app.add_handler(CommandHandler("removeadmin", remove_admin))
@@ -232,4 +246,4 @@ def main():
 
 if __name__ == '__main__':
     main()
-
+    
