@@ -34,7 +34,23 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_text = update.message.text
     try:
         completion = groq_client.chat.completions.create(
-            model="llama-3.3-70b-versatile",  # Groq ရဲ့ အမှန်တကယ် လက်ရှိသုံးနေကျ Model နာမည်
+            model="openai/gpt-oss-20b",  # လက်ရှိ အလုပ်လုပ်မည့် Model နာမည်မှန်
+            messages=[{"role": "user", "content": user_text}]
+        )
+        reply_text = completion.choices[0].message.content
+        await update.message.reply_text(reply_text)
+    except Exception as e:
+        print(f"Groq API Error Details: {e}")
+        await update.message.reply_text(f"Error: {e}")
+
+if __name__ == "__main__":
+    app = ApplicationBuilder().token(TELEGRAM_TOKEN).build()
+    app.add_handler(CommandHandler("start", start))
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
+    
+    print("Bot is polling...")
+    app.run_polling()
+te          model="llama-3.3-70b-versatile",  # Groq ရဲ့ အမှန်တကယ် လက်ရှိသုံးနေကျ Model နာမည်
             messages=[{"role": "user", "content": user_text}]
         )
         reply_text = completion.choices[0].message.content
