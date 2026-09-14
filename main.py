@@ -16,7 +16,8 @@ GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
 # Configure Gemini
 genai.configure(api_key=GEMINI_API_KEY)
-model = genai.GenerativeModel('gemini-1.5-flash')
+# ပိုမိုတည်ငြိမ်သော gemini-pro မော်ဒယ်သို့ ပြောင်းလဲထားပါသည်
+model = genai.GenerativeModel('gemini-pro')
 
 # Database setup
 conn = sqlite3.connect('bot_database.db', check_same_thread=False)
@@ -82,7 +83,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(response.text)
     except Exception as e:
         logging.error(f"Gemini Error: {e}")
-        await update.message.reply_text("Error occurred while processing your request.")
+        await update.message.reply_text(f"Error occurred: {str(e)}")
 
 # --- OWNER COMMANDS ---
 async def add_admin(update: Update, context: ContextTypes.DEFAULT_TYPE):
