@@ -94,7 +94,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     if user.id == OWNER_ID:
         await update.message.reply_text(
-            "မင်္ဂလာပါ Boss! Database နှင့် Vision (ဓာတ်ပုံဖတ်ခြင်း) စနစ်ပါ အောင်မြင်စွာ ချိတ်ဆက်ပြီးပါပြီ။ 👑\n\n"
+            "မင်္ဂလာပါ Boss! Bot အသင့်ဖြစ်ပါပြီ။ 👑\n\n"
             "🛠 **Owner Commands:**\n"
             "👉 `/setrule [စည်းကမ်းအသစ်]` - AI စည်းကမ်းပြောင်းရန်\n"
             "👉 `/addvip [user_id]` - VIP သတ်မှတ်ရန်\n"
@@ -103,7 +103,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
             parse_mode="Markdown"
         )
     else:
-        await update.message.reply_text(f"မင်္ဂလာပါ။ သင်၏အဆင့်မှာ [{role.upper()}] ဖြစ်ပါသည်။ စာများနှင့် ဓာတ်ပုံများ ပို့နိုင်ပါပြီ။")
+        await update.message.reply_text(f"မင်္ဂလာပါ။ သင်၏အဆင့်မှာ [{role.upper()}] ဖြစ်ပါသည်။")
 
 async def set_rule(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_user.id != OWNER_ID:
@@ -143,14 +143,13 @@ async def check_my_status(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     role = get_user_role(user.id)
     if user.id == OWNER_ID:
-        status = "👑 Owner"
+        status = "👑 သင်သည် Bot ၏ ပိုင်ရှင် (Owner) ဖြစ်ပါသည်။"
     elif role == "vip":
-        status = "⭐ VIP User"
+        status = "⭐ သင်သည် VIP အဆင့် အသုံးပြုသူ ဖြစ်ပါသည်။"
     else:
-        status = "👤 Normal User"
-    await update.message.reply_text(f"Status: {status}")
+        status = "👤 သင်သည် ပုံမှန် အဆင့် (Normal User) ဖြစ်ပါသည်။"
+    await update.message.reply_text(status)
 
-# စာသားနှင့် ဓာတ်ပုံများကိုပါ တစ်ပါတည်း လက်ခံစစ်ဆေးပေးမည့် Function
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     role = get_user_role(user.id)
@@ -161,7 +160,6 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     current_rule = get_current_rule()
 
     try:
-        # User က ဓာတ်ပုံ ပို့လာခြင်း ရှိမရှိ စစ်ဆေးခြင်း
         if update.message.photo:
             photo_file = await update.message.photo[-1].get_file()
             photo_bytes = await photo_file.download_as_bytearray()
@@ -169,11 +167,11 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             base64_image = base64.b64encode(photo_bytes).decode('utf-8')
             image_url = f"data:image/jpeg;base64,{base64_image}"
             
-            caption_text = update.message.caption if update.message.caption else "ဒီပုံကို လေ့လာပြီး လိုအပ်သလို မှတ်ချက်ပေးပါ။"
+            caption_text = update.message.caption if update.message.caption else "ဒီပုံကို လေ့လာပြီး ဖြေကြားပေးပါ။"
 
-            # Groq Vision Model ကို အသုံးပြုခြင်း
+            # ဓာတ်ပုံဖတ်ရန် Vision Model
             completion = groq_client.chat.completions.create(
-                model="meta-llama/llama-4-scout-17b-16e-instruct",
+                model="llama-3.2-11b-vision-preview",
                 messages=[
                     {"role": "system", "content": current_rule},
                     {
@@ -188,12 +186,12 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             reply_text = completion.choices[0].message.content
 
         else:
-            # ပုံမဟုတ်ဘဲ ပုံမှန်စာသား ပို့လာပါက
             user_text = update.message.text
             truncated_text = user_text[:3000] if user_text else ""
             
+            # စာသားအတွက် တည်ငြိမ်ပြီး အလုပ်လုပ်သော Model အသစ်
             completion = groq_client.chat.completions.create(
-                model="llama-3.1-8b-instant",
+                model="llama-3.3-70b-versatile",
                 messages=[
                     {"role": "system", "content": current_rule},
                     {"role": "user", "content": truncated_text}
@@ -209,7 +207,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(reply_text)
 
     except Exception as e:
-        print(f"Error: {e}")
+        print(f"Error Details: {e}")
         await update.message.reply_text("Error occurred while processing your request.")
 
 if __name__ == "__main__":
@@ -220,9 +218,9 @@ if __name__ == "__main__":
     app.add_handler(CommandHandler("addvip", add_vip))
     app.add_handler(CommandHandler("ban", ban_user))
     app.add_handler(CommandHandler("status", check_my_status))
-    # စာသားအပြင် ဓာတ်ပုံများကိုပါ လက်ခံနိုင်ရန် filters.PHOTO ကို ထည့်သွင်းထားသည်
     app.add_handler(MessageHandler((filters.TEXT | filters.PHOTO) & ~filters.COMMAND, handle_message))
     
-    print("Bot is polling with Vision & Database...")
-    app.run_polling()
-
+    print("Bot is polling successfully...")
+    # Conflict Error မတက်စေရန် drop_pending_updates=True ကို ထည့်သွင်းပေးထားပါသည်
+    app.run_polling(drop_pending_updates=True)
+    
