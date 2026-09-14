@@ -34,7 +34,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_text = update.message.text
     try:
         completion = groq_client.chat.completions.create(
-            model="openai/gpt-oss-20b",  # လက်ရှိ အလုပ်လုပ်မည့် Model နာမည်မှန်
+            model="llama-3.3-70b-versatile",  # Groq ရဲ့ တရားဝင် Model ID မှန်
             messages=[{"role": "user", "content": user_text}]
         )
         reply_text = completion.choices[0].message.content
@@ -42,54 +42,6 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     except Exception as e:
         print(f"Groq API Error Details: {e}")
         await update.message.reply_text(f"Error: {e}")
-
-if __name__ == "__main__":
-    app = ApplicationBuilder().token(TELEGRAM_TOKEN).build()
-    app.add_handler(CommandHandler("start", start))
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
-    
-    print("Bot is polling...")
-    app.run_polling()
-te          model="llama-3.3-70b-versatile",  # Groq ရဲ့ အမှန်တကယ် လက်ရှိသုံးနေကျ Model နာမည်
-            messages=[{"role": "user", "content": user_text}]
-        )
-        reply_text = completion.choices[0].message.content
-        await update.message.reply_text(reply_text)
-    except Exception as e:
-        print(f"Groq API Error Details: {e}")
-        await update.message.reply_text(f"Error: {e}")
-
-if __name__ == "__main__":
-    app = ApplicationBuilder().token(TELEGRAM_TOKEN).build()
-    app.add_handler(CommandHandler("start", start))
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
-    
-    print("Bot is polling...")
-    app.run_polling()
-            model="llama3-70b-8192",  # Groq ရဲ့ အသုံးများတဲ့ Standard Model နာမည်သို့ ပြောင်းလိုက်သည်
-            messages=[{"role": "user", "content": user_text}]
-        )
-        reply_text = completion.choices[0].message.content
-        await update.message.reply_text(reply_text)
-    except Exception as e:
-        print(f"Groq API Error Details: {e}")
-        await update.message.reply_text(f"Error: {e}")
-
-if __name__ == "__main__":
-    app = ApplicationBuilder().token(TELEGRAM_TOKEN).build()
-    app.add_handler(CommandHandler("start", start))
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
-    
-    print("Bot is polling...")
-    app.run_polling()
-            model="llama-3.1-8b-instant",  # Model နာမည်အသစ် ပြောင်းထားသည်
-            messages=[{"role": "user", "content": user_text}]
-        )
-        reply_text = completion.choices[0].message.content
-        await update.message.reply_text(reply_text)
-    except Exception as e:
-        print(f"Groq API Error Details: {e}")  # Render Logs ထဲတွင် Error အမှန်ကို ပြရန်
-        await update.message.reply_text(f"Error: {e}") # Telegram ထဲတွင် Error အမှန်ကို တိုက်ရိုက်ပြရန်
 
 if __name__ == "__main__":
     app = ApplicationBuilder().token(TELEGRAM_TOKEN).build()
