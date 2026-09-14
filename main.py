@@ -1,46 +1,51 @@
-import subprocess
+import os
+import threading
+from http.server import HTTPServer, BaseHTTPRequestHandler
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes
+from groq import Groq
 
-# ၁။ Telegram Bot Token ကို ဒီမှာ ထည့်ပါ
-TOKEN = "8854987165:AAHEUTH2wL26WrG-cYR3UDd5IyCZa4ZA6gE"
+# 1. Render Port Check အတွက် Dummy Web Server ဖွင့်ပေးခြင်း
+class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        self.send_response(200)
+        self.end_headers()
+        self.wfile.write(b"Bot is alive!")
 
-# Local AI ဆီက အဖြေတောင်းမည့် Function
-def ask_local_ai(prompt):
-    cmd = [
-        "./build/bin/llama-cli",
-        "-m", "model.gguf",
-        "-p", f"You are a helpful assistant. User: {prompt}\nAI:",
-        "-n", "128",
-        "--temp", "0.7"
-    ]
-    result = subprocess.run(cmd, capture_output=True, text=True, cwd="/data/data/com.termux/files/home/llama.cpp")
-    
-    # AI ပြန်ဖြေတဲ့ စာသားကို ခွဲထုတ်ခြင်း
-    output = result.stdout
-    if "AI:" in output:
-        return output.split("AI:")[-1].strip()
-    return output
+def run_web_server():
+    port = int(os.environ.get("PORT", 10000))
+    server = HTTPServer(("0.0.0.0", port), SimpleHTTPRequestHandler)
+    print(f"Web server running on port {port}")
+    server.serve_forever()
 
-# /start command အတွက်
+# Background Thread ဖြင့် Web Server ကို သီးသန့် Run မည်
+threading.Thread(target=run_web_server, daemon=True).start()
+
+# 2. Telegram Bot & Groq Setup
+TELEGRAM_TOKEN = os.environ.get("TELEGRAM_TOKEN")
+GROQ_API_KEY = os.environ.get("GROQ_API_KEY")
+
+groq_client = Groq(api_key=GROQ_API_KEY)
+
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("မင်္ဂလာပါ။ ဖုန်းထဲက Local AI Bot မှ ကြိုဆိုပါတယ်။ ဘာမေးချင်ပါသလဲ?")
+    await update.message.reply_text("မင်္ဂလာပါ။ AI Bot က စတင်အလုပ်လုပ်နေပါပြီ။ ဘာကူညီပေးရမလဲခင်ဗျာ။")
 
-# စာပို့လိုက်တိုင်း AI က ပြန်ဖြေပေးမည့် Function
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_text = update.message.text
-    await update.message.reply_text("AI စဉ်းစားနေသည်...")
-    
-    ai_response = ask_local_ai(user_text)
-    await update.message.reply_text(ai_response)
+    try:
+        completion = groq_client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=[{"role": "user", "content": user_text}]
+        )
+        reply_text = completion.choices[0].message.content
+        await update.message.reply_text(reply_text)
+    except Exception as e:
+        await update.message.reply_text("တောင်းပန်ပါတယ်၊ အကြောင်းပြန်ရာတွင် အမှားတစ်ခု ဖြစ်ပေါ်ခဲ့ပါတယ်။")
 
-if __name__ == '__main__':
-
-
-    app = ApplicationBuilder().token(TOKEN).build()
-    
+if __name__ == "__main__":
+    app = ApplicationBuilder().token(TELEGRAM_TOKEN).build()
     app.add_handler(CommandHandler("start", start))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
     
-    print("Telegram Bot စတင်ပွင့်နေပါပြီ...")
+    print("Bot is polling...")
     app.run_polling()
