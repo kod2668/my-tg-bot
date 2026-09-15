@@ -45,7 +45,7 @@ def get_user_role(user_id):
         
     return 'user'
 
-# --- START COMMAND (Role အလိုက် နှုတ်ဆက်ပုံများ) ---
+# --- START COMMAND ---
 async def start_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     role = get_user_role(user_id)
@@ -59,7 +59,7 @@ async def start_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     else:
         await update.message.reply_text("Xinon ရဲ့ auto system talking AI မှ ကြိုဆိုပါတယ်။ VIP ဝင်ချင်ရင် Telegram -> @REDXinon ထံမှာ မေးမြန်းနိုင်ပါတယ်။")
 
-# --- MESSAGE HANDLER ---
+# --- MESSAGE HANDLER (SDK အသစ်ပုံစံဖြင့် ပြင်ဆင်ထားသည်) ---
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     
@@ -77,7 +77,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         prompt = f"{system_instruction}\n\nUser: {user_message}"
         
-        # SDK အသစ်ဖြင့် Model ခေါ်ယူခြင်း (gemini-2.5-flash ကို သုံးထားပါသည်)
+        # SDK အသစ် (`google-genai`) ၏ တရားဝင် ခေါ်သုံးပုံစံ (gemini-2.5-flash ကို သုံးထားပါသည်)
         response = client.models.generate_content(
             model='gemini-2.5-flash',
             contents=prompt,
@@ -254,3 +254,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+
