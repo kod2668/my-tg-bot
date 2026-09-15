@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="my">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Xinon AI</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --bg-color: #131314;
+            --surface-color: #1e1f20;
+            --surface-hover: #2d2e30;
+            --text-primary: #e3e3e3;
+            --text-secondary: #c4c7c5;
+            --accent-color: #8ab4f8;
+            --border-color: #333537;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: var(--bg-color); color: var(--text-primary); height: 100vh; display: flex; overflow: hidden; }
+
+        /* Sidebar */
+        .sidebar { width: 280px; background-color: var(--surface-color); display: flex; flex-direction: column; position: fixed; top: 0; left: -280px; height: 100%; transition: left 0.3s ease; z-index: 1000; border-right: 1px solid var(--border-color); padding: 15px; }
+        .sidebar.open { left: 0; }
+        .sidebar-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 25px; }
+        .sidebar-title { font-size: 1.2rem; font-weight: 600; }
+        .sidebar-menu-item { display: flex; align-items: center; gap: 12px; padding: 12px 15px; background: transparent; border: none; color: var(--text-primary); font-size: 0.95rem; border-radius: 25px; cursor: pointer; text-align: left; margin-bottom: 8px; transition: background 0.2s; width: 100%; }
+        .sidebar-menu-item:hover { background-color: var(--surface-hover); }
+        .sidebar-menu-item i { font-size: 1.1rem; color: var(--accent-color); }
+
+        .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: none; z-index: 999; }
+        .overlay.active { display: block; }
+
+        /* Main Container */
+        .main-container { flex-grow: 1; display: flex; flex-direction: column; height: 100vh; width: 100%; }
+        header { display: flex; align-items: center; justify-content: space-between; padding: 15px 20px; background-color: var(--bg-color); border-bottom: 1px solid var(--border-color); }
+        .header-left, .header-right { display: flex; align-items: center; gap: 15px; }
+        .menu-btn, .icon-btn { background: none; border: none; color: var(--text-primary); font-size: 1.3rem; cursor: pointer; }
+        .app-title { font-size: 1.2rem; font-weight: 600; }
+
+        /* Chat Area */
+        .chat-body { flex-grow: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 20px; max-width: 800px; width: 100%; margin: 0 auto; }
+        .welcome-hero { margin-top: 40px; }
+        .welcome-hero h1 { font-size: 2.2rem; background: linear-gradient(45deg, #4285f4, #9b72cb, #d96570); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 8px; }
+        .welcome-hero p { font-size: 1.2rem; color: var(--text-secondary); }
+
+        .message { display: flex; gap: 15px; align-items: flex-start; animation: fadeIn 0.3s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .message.user { flex-direction: row-reverse; }
+        .message-content { background-color: var(--surface-color); padding: 12px 18px; border-radius: 18px; max-width: 75%; font-size: 0.98rem; line-height: 1.5; border: 1px solid var(--border-color); word-break: break-word; }
+        .message.user .message-content { background-color: #2b2d31; }
+        .message-content img { max-width: 200px; border-radius: 10px; margin-bottom: 8px; display: block; }
+
+        /* Input Area */
+        .chat-input-area { padding: 15px 20px; background-color: var(--bg-color); display: flex; flex-direction: column; align-items: center; }
+        .chat-input-container { display: flex; align-items: center; background-color: var(--surface-color); width: 100%; max-width: 750px; border-radius: 30px; padding: 8px 15px; border: 1px solid var(--border-color); gap: 10px; }
+        .chat-input-container input[type="text"] { flex-grow: 1; background: none; border: none; color: var(--text-primary); font-size: 1rem; outline: none; }
+        .upload-btn, .send-btn { background: none; border: none; color: var(--text-secondary); font-size: 1.2rem; cursor: pointer; width: 38px; height: 38px; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: color 0.2s; }
+        .upload-btn:hover { color: var(--accent-color); }
+        .send-btn { background-color: var(--accent-color); color: #131314; }
+
+        /* Image Preview Box above input */
+        #imagePreviewContainer { width: 100%; max-width: 750px; display: flex; gap: 10px; margin-bottom: 8px; padding: 0 10px; }
+        .preview-thumb-box { position: relative; width: 60px; height: 60px; border-radius: 8px; overflow: hidden; border: 1px solid var(--border-color); }
+        .preview-thumb-box img { width: 100%; height: 100%; object-fit: cover; }
+        .preview-thumb-box button { position: absolute; top: 2px; right: 2px; background: rgba(0,0,0,0.7); color: white; border: none; border-radius: 50%; width: 18px; height: 18px; font-size: 10px; cursor: pointer; }
+
+        /* Settings Page */
+        .settings-page { position: fixed; top: 0; right: -100%; width: 100%; height: 100%; background-color: var(--bg-color); z-index: 2000; transition: right 0.3s ease; display: flex; flex-direction: column; padding: 20px; }
+        .settings-page.open { right: 0; }
+        .settings-header { display: flex; align-items: center; gap: 20px; margin-bottom: 30px; border-bottom: 1px solid var(--border-color); padding-bottom: 15px; }
+        .settings-option { padding: 16px; background-color: var(--surface-color); border-radius: 12px; margin-bottom: 12px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; font-size: 1rem; border: 1px solid var(--border-color); }
+        .device-id-box { background: var(--surface-color); padding: 15px; border-radius: 12px; border: 1px solid var(--border-color); margin-top: 10px; font-size: 0.85rem; word-break: break-all; color: var(--text-secondary); }
+    </style>
+</head>
+<body>
+
+    <div class="overlay" id="overlay" onclick="toggleSidebar()"></div>
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <span class="sidebar-title">Xinon</span>
+            <button class="menu-btn" onclick="toggleSidebar()"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <button class="sidebar-menu-item" onclick="startNewChat()"><i class="fa-solid fa-plus"></i> New chat</button>
+        <button class="sidebar-menu-item" onclick="openImageGen()"><i class="fa-solid fa-image"></i> Image Studio</button>
+    </div>
+
+    <div class="main-container">
+        <header>
+            <div class="header-left">
+                <button class="menu-btn" onclick="toggleSidebar()"><i class="fa-solid fa-bars"></i></button>
+                <span class="app-title" id="appTitleStatus">Xinon (Free)</span>
+            </div>
+            <div class="header-right">
+                <button class="icon-btn" onclick="openSettings()"><i class="fa-solid fa-gear"></i></button>
+            </div>
+        </header>
+
+        <div class="chat-body" id="chatBody">
+            <div class="welcome-hero" id="welcomeHeroSection">
+                <h1 id="welcomeTitle">Hello</h1>
+                <p>How can Xinon help you today?</p>
+            </div>
+        </div>
+
+        <div class="chat-input-area">
+            <div id="imagePreviewContainer"></div>
+            <div class="chat-input-container">
+                <input type="file" id="imageInput" accept="image/*" style="display: none;" onchange="previewImage()">
+                <button class="upload-btn" onclick="document.getElementById('imageInput').click()" title="ပုံတင်ရန်"><i class="fa-solid fa-image"></i></button>
+                
+                <input type="text" id="userInput" placeholder="မေးခွန်း သို့မဟုတ် ပုံပြင်ဆင်ရန် ရိုက်ထည့်ပါ..." onkeypress="handleKeyPress(event)">
+                <button class="send-btn" onclick="sendMessage()"><i class="fa-solid fa-arrow-up"></i></button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Page -->
+    <div class="settings-page" id="settingsPage">
+        <div class="settings-header">
+            <button class="menu-btn" onclick="closeSettings()"><i class="fa-solid fa-arrow-left"></i></button>
+            <h2>Settings</h2>
+        </div>
+        <div class="settings-option" onclick="openTelegramVIP()" style="border-color: #8ab4f8;">
+            <span style="color: #8ab4f8; font-weight: 600;"><i class="fa-brands fa-telegram"></i> Upgrade to VIP (Contact Telegram)</span>
+            <i class="fa-solid fa-chevron-right" style="color: #8ab4f8;"></i>
+        </div>
+        <div style="margin-top: 20px;">
+            <p style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 5px;">Your Device ID (Send this to Owner for VIP):</p>
+            <div class="device-id-box" id="deviceIdDisplay" onclick="copyDeviceId()" title="Click to copy">Loading...</div>
+        </div>
+    </div>
+
+    <script>
+        let selectedFile = null;
+
+        function getOrCreateDeviceId() {
+            let deviceId = localStorage.getItem('xinon_device_id');
+            if (!deviceId) {
+                deviceId = 'xdev_gg2bj8omwskmu282byb';
+                localStorage.setItem('xinon_device_id', deviceId);
+            }
+            return deviceId;
+        }
+
+        const myDeviceId = getOrCreateDeviceId();
+        document.getElementById('deviceIdDisplay').innerText = myDeviceId;
+
+        function copyDeviceId() {
+            navigator.clipboard.writeText(myDeviceId);
+            alert("Device ID copied to clipboard!");
+        }
+
+        async function checkInitialStatus() {
+            try {
+                let response = await fetch('https://my-tg-bot-production-c55e.up.railway.app/api/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        prompt: "check_status_init", 
+                        device_id: myDeviceId 
+                    })
+                });
+                let data = await response.json();
+                
+                let titleElement = document.getElementById('welcomeTitle');
+                let appTitle = document.getElementById('appTitleStatus');
+
+                if (data.tier === "boss") {
+                    if(titleElement) titleElement.innerText = "Hello, Boss";
+                    appTitle.innerText = "Xinon (Boss 👑)";
+                } else if (data.tier === "vip") {
+                    if(titleElement) titleElement.innerText = "Hello, VIP User";
+                    appTitle.innerText = "Xinon (VIP 🌟)";
+                } else {
+                    if(titleElement) titleElement.innerText = "Hello";
+                    appTitle.innerText = "Xinon (Free)";
+                }
+            } catch (e) {
+                console.log("Status check offline");
+            }
+        }
+        checkInitialStatus();
+
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('open');
+            document.getElementById('overlay').classList.toggle('active');
+        }
+
+        function openSettings() { document.getElementById('settingsPage').classList.add('open'); }
+        function closeSettings() { document.getElementById('settingsPage').classList.remove('open'); }
+        function openTelegramVIP() { window.open("https://t.me/REDXinon", "_blank"); }
+
+        function startNewChat() {
+            location.reload();
+        }
+
+        function openImageGen() {
+            document.getElementById('chatBody').innerHTML = `
+                <div class="welcome-hero">
+                    <h1>Image Studio</h1>
+                    <p>Describe an image you want to generate...</p>
+                </div>`;
+            toggleSidebar();
+        }
+
+        function handleKeyPress(event) {
+            if (event.key === 'Enter') sendMessage();
+        }
+
+        function previewImage() {
+            const fileInput = document.getElementById('imageInput');
+            const previewContainer = document.getElementById('imagePreviewContainer');
+            
+            if (fileInput.files && fileInput.files[0]) {
+                selectedFile = fileInput.files[0];
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    previewContainer.innerHTML = `
+                        <div class="preview-thumb-box">
+                            <img src="${e.target.result}" alt="Preview">
+                            <button onclick="removeImage()">×</button>
+                        </div>
+                    `;
+                }
+                reader.readAsDataURL(selectedFile);
+            }
+        }
+
+        function removeImage() {
+            selectedFile = null;
+            document.getElementById('imageInput').value = '';
+            document.getElementById('imagePreviewContainer').innerHTML = '';
+        }
+
+        async function sendMessage() {
+            let inputField = document.getElementById('userInput');
+            let messageText = inputField.value.trim();
+            if (!messageText && !selectedFile) return;
+
+            let chatBody = document.getElementById('chatBody');
+            
+            let welcomeHero = document.getElementById('welcomeHeroSection');
+            if (welcomeHero) {
+                welcomeHero.remove();
+            }
+
+            let userHtmlContent = '';
+            if (selectedFile) {
+                let imageUrl = URL.createObjectURL(selectedFile);
+                userHtmlContent += `<img src="${imageUrl}" alt="Uploaded Image">`;
+            }
+            if (messageText) {
+                userHtmlContent += `<span>${messageText}</span>`;
+            }
+
+            let userMsgDiv = document.createElement('div');
+            userMsgDiv.className = 'message user';
+            userMsgDiv.innerHTML = `<div class="message-content">${userHtmlContent}</div>`;
+            chatBody.appendChild(userMsgDiv);
+            
+            let currentFile = selectedFile;
+            inputField.value = '';
+            removeImage();
+            chatBody.scrollTop = chatBody.scrollHeight;
+
+            let loadingId = 'ai-loading-' + Date.now();
+            let loadingMsgDiv = document.createElement('div');
+            loadingMsgDiv.className = 'message ai';
+            loadingMsgDiv.id = loadingId;
+            loadingMsgDiv.innerHTML = `<div class="message-content" style="color: var(--accent-color);">Xinon is thinking...</div>`;
+            chatBody.appendChild(loadingMsgDiv);
+            chatBody.scrollTop = chatBody.scrollHeight;
+
+            try {
+                let response;
+                if (currentFile) {
+                    let formData = new FormData();
+                    formData.append('device_id', myDeviceId);
+                    formData.append('prompt', messageText);
+                    formData.append('image', currentFile);
+
+                    response = await fetch('https://my-tg-bot-production-c55e.up.railway.app/api/chat', {
+                        method: 'POST',
+                        body: formData
+                    });
+                } else {
+                    response = await fetch('https://my-tg-bot-production-c55e.up.railway.app/api/chat', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ 
+                            prompt: messageText,
+                            device_id: myDeviceId 
+                        })
+                    });
+                }
+
+                let data = await response.json();
+                
+                let loadingElement = document.getElementById(loadingId);
+                if (loadingElement) loadingElement.remove();
+
+                let appTitle = document.getElementById('appTitleStatus');
+                if (data.tier === "boss") {
+                    appTitle.innerText = "Xinon (Boss 👑)";
+                } else if (data.tier === "vip") {
+                    appTitle.innerText = "Xinon (VIP 🌟)";
+                } else {
+                    appTitle.innerText = "Xinon (Free)";
+                }
+
+                let aiReply = data.response || data.message || "No response received.";
+                
+                let aiMsgDiv = document.createElement('div');
+                aiMsgDiv.className = 'message ai';
+                aiMsgDiv.innerHTML = `<div class="message-content">${aiReply}</div>`;
+                chatBody.appendChild(aiMsgDiv);
+                chatBody.scrollTop = chatBody.scrollHeight;
+
+            } catch (error) {
+                let loadingElement = document.getElementById(loadingId);
+                if (loadingElement) loadingElement.remove();
+
+                let errorMsgDiv = document.createElement('div');
+                errorMsgDiv.className = 'message ai';
+                errorMsgDiv.innerHTML = `<div class="message-content" style="color: #ff6b6b;">Connection Error: Unable to reach Railway backend.</div>`;
+                chatBody.appendChild(errorMsgDiv);
+                chatBody.scrollTop = chatBody.scrollHeight;
+            }
+        }
+    </script>
+</body>
+</html>
