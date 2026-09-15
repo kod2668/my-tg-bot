@@ -1,6 +1,7 @@
 import os
 import sqlite3
 from flask import Flask, request, jsonify
+from flask_cors import CORS  # CORS အတွက် ထည့်သွင်းထားပါသည်
 from telegram import Update
 from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler
 from google import genai
@@ -8,6 +9,7 @@ from google.genai import types
 
 # Initialize Flask for Keep-Alive
 app = Flask(__name__)
+CORS(app)  # Frontend နှင့် Backend ချိတ်ဆက်မှု အဆင်ပြေစေရန် CORS ခွင့်ပြုပေးခြင်း
 
 @app.route('/')
 def home():
@@ -157,4 +159,3 @@ def api_chat():
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=int(os.environ.get("PORT", 10000)))
-  
