@@ -108,7 +108,6 @@ def generate_xinon_response(prompt: str, user_tier: str, file_data=None):
     if file_data:
         contents.append(file_data)
 
-    # 404 Error လုံးဝမတက်စေရန် gemini-3.6-flash သို့ အတိအကျ ပြောင်းလဲထားပါသည်
     response = client.models.generate_content(
         model='gemini-3.6-flash',
         contents=contents,
@@ -117,62 +116,11 @@ def generate_xinon_response(prompt: str, user_tier: str, file_data=None):
             safety_settings=safety_settings if safety_settings else None,
         )
     )
-    return response.text
+    return response.text  # <- ဒီလိုင်းက Function ထဲမှာ သေချာ ရှိနေပါပြီ
 
 # API Endpoint for App Connection (Supports both JSON & Form-Data for Images)
 @app.route('/api/chat', methods=['POST'])
 def api_chat():
-    if request.files:
-        device_id = request.form.get("device_id")
-        prompt = request.form.get("prompt", "")
-        user_id = request.form.get("user_id", 0)
-        image_file = request.files.get("image")
-        
-        file_data = None
-        if image_file:
-            image_bytes = image_file.read()
-            file_data = types.Part.from_bytes(
-                data=image_bytes,
-                mime_type=image_file.content_type
-            )
-    else:
-        data = request.json or {}
-        device_id = data.get("device_id")
-        prompt = data.get("prompt", "")
-        user_id = data.get("user_id", 0)
-        file_data = None
-
-    # Determine Tier
-    if int(user_id) == OWNER_ID or device_id == "xdev_gg2bj8omwskmu282byb":
-        tier = "boss"
-    elif is_vip(device_id):
-        tier = "vip"
-    else:
-        tier = "free"
-
-    try:
-        reply = generate_xinon_response(prompt, tier, file_data=file_data)
-        return jsonify({"status": "success", "response": reply, "tier": tier})
-    except Exception as e:
-        return jsonify({"status": "error", "message": str(e)}), 500
-
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=int(os.environ.get("PORT", 10000)))
-
-    response = client.models.generate_content(
-        model='gemini-2.5-flash',
-        contents=contents,
-        config=types.GenerateContentConfig(
-            system_instruction=system_instruction,
-            safety_settings=safety_settings if safety_settings else None,
-        )
-    )
-    return response.text
-
-# API Endpoint for App Connection (Supports both JSON & Form-Data for Images)
-@app.route('/api/chat', methods=['POST'])
-def api_chat():
-    # Check if request is form-data (with file) or json
     if request.files:
         device_id = request.form.get("device_id")
         prompt = request.form.get("prompt", "")
