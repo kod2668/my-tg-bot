@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="my">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Xinon AI - Register</title>
+    <style>
+        body {
+            background-color: #121212;
+            color: #ffffff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .login-card {
+            background-color: #1e1e1e;
+            padding: 40px 30px;
+            border-radius: 16px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.6);
+            width: 100%;
+            max-width: 350px;
+            text-align: center;
+            box-sizing: border-box;
+        }
+        .logo {
+            font-size: 32px;
+            font-weight: bold;
+            margin-bottom: 8px;
+            color: #ffffff;
+            letter-spacing: 0.5px;
+        }
+        .subtitle {
+            font-size: 14px;
+            color: #a0a0a0;
+            margin-bottom: 25px;
+        }
+        .input-group {
+            text-align: left;
+            margin-bottom: 15px;
+        }
+        .input-group label {
+            font-size: 13px;
+            color: #cccccc;
+            display: block;
+            margin-bottom: 5px;
+        }
+        .input-group input {
+            width: 100%;
+            padding: 12px;
+            background: #2d2d2d;
+            border: 1px solid #444;
+            color: #fff;
+            border-radius: 8px;
+            box-sizing: border-box;
+            font-size: 14px;
+        }
+        .input-group input:focus {
+            border-color: #6366f1;
+            outline: none;
+        }
+        button {
+            width: 100%;
+            padding: 12px;
+            background: #4f46e5;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 15px;
+            margin-top: 10px;
+            transition: background 0.2s;
+        }
+        button:hover {
+            background: #4338ca;
+        }
+        .error {
+            color: #f87171;
+            font-size: 13px;
+            margin-bottom: 15px;
+            background-color: rgba(248, 113, 113, 0.1);
+            padding: 10px;
+            border-radius: 6px;
+        }
+        .login-link {
+            margin-top: 20px;
+            font-size: 13px;
+            color: #a0a0a0;
+        }
+        .login-link a {
+            color: #818cf8;
+            text-decoration: none;
+            font-weight: 500;
+        }
+        .login-link a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-card">
+        <div class="logo">Xinon AI</div>
+        <div class="subtitle">အကောင့်အသစ် ဖန်တီးရန်</div>
+        
+        <!-- Flash Messages / Error ပြရန် -->
+        {% with messages = get_flashed_messages() %}
+          {% if messages %}
+            <div class="error">{{ messages[0] }}</div>
+          {% endif %}
+        {% endwith %}
+
+        <!-- Register Form -->
+        <form method="POST" action="/register">
+            <div class="input-group">
+                <label>Email</label>
+                <input type="email" name="email" placeholder="example@gmail.com" required>
+            </div>
+
+            <div class="input-group">
+                <label>Password</label>
+                <input type="password" name="password" placeholder="••••••••" required>
+            </div>
+
+            <button type="submit">အကောင့်ပြုလုပ်မည်</button>
+        </form>
+
+        <div class="login-link">
+            အကောင့်ရှိပြီးသားလား? <a href="/login">ဝင်ရန် (Login)</a>
+        </div>
+    </div>
+</body>
+</html>
