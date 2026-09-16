@@ -12,7 +12,7 @@ app = Flask(__name__)
 app.secret_key = 'your_secret_key_here'
 CORS(app)
 
-# ==================== WEB UI ROUTES (app.py က ယူလာတာတွေ) ====================
+# ==================== WEB UI ROUTES ====================
 @app.route('/')
 def home():
     if 'user' in session:
@@ -157,7 +157,7 @@ def api_chat():
     def generate():
         try:
             response = client.models.generate_content_stream(
-                model='gemini-3.6-flash',
+                model='gemini-2.5-flash',  # လိုအပ်ပါက gemini-2.5-flash သို့ ပြောင်းသုံးနိုင်သည်
                 contents=contents,
                 config=types.GenerateContentConfig(
                     system_instruction=system_instruction,
@@ -167,6 +167,7 @@ def api_chat():
             for chunk in response:
                 if chunk.text:
                     yield chunk.text
+            # Fallback if chunk.text is empty
         except Exception as e:
             yield f"\n[Error: {str(e)}]"
 
