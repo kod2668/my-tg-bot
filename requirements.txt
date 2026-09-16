@@ -3,3 +3,6 @@ google-genai
 pillow
 flask
 flask-cors
+Flask-SQLAlchemy
+werkzeug
+
