@@ -108,7 +108,6 @@ def is_vip(device_id: str) -> bool:
 
 @app.route('/api/chat', methods=['POST'])
 def api_chat():
-    # API ခေါ်တဲ့အချိန်တိုင်းမှာ Key ကို Environment ကနေ တိုက်ရိုက်ဖတ်ပြီး Client ဆောက်မယ်
     api_key = os.getenv("GEMINI_API_KEY")
     if not api_key:
         return Response("[Error: GEMINI_API_KEY environment variable is missing on server.]", mimetype='text/plain')
@@ -162,7 +161,7 @@ def api_chat():
     def generate():
         try:
             response = client.models.generate_content_stream(
-                model='gemini-2.5-flash',
+                model='gemini-3.6-flash',  # 👈 Model အသစ်သို့ ပြောင်းပြီးပါပြီ
                 contents=contents,
                 config=types.GenerateContentConfig(
                     system_instruction=system_instruction,
@@ -180,3 +179,4 @@ def api_chat():
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 8080))
     app.run(host='0.0.0.0', port=port)
+
