@@ -4,4 +4,4 @@ flask
 flask-cors
 Flask-SQLAlchemy
 werkzeug
-
+psycopg[binary]
