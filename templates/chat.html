@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html lang="my" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Xinon AI</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        .message-content pre { background-color: #1e1e1e; color: #d4d4d4; padding: 1rem; border-radius: 0.5rem; overflow-x: auto; margin-top: 0.5rem; margin-bottom: 0.5rem; }
+        .message-content code { font-family: monospace; background-color: rgba(0,0,0,0.1); padding: 0.2rem 0.4rem; border-radius: 0.25rem; font-size: 0.875rem; }
+        .message-content pre code { background-color: transparent; padding: 0; }
+        .message-content p { margin-bottom: 0.75rem; }
+        .message-content p:last-child { margin-bottom: 0; }
+        .ai-image-card { position: relative; margin-top: 0.5rem; margin-bottom: 0.5rem; display: inline-block; max-width: 100%; border-radius: 0.75rem; overflow: hidden; border: 1px solid #374151; background: #1f2937; }
+        .ai-image-card img { display: block; width: 100%; height: auto; max-height: 400px; object-fit: contain; cursor: pointer; }
+        .ai-image-actions { padding: 0.5rem 0.75rem; display: flex; align-items: center; justify-content: space-between; background: rgba(17, 24, 39, 0.9); }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #3c4043; border-radius: 4px; }
+    </style>
+</head>
+
+<body class="bg-[#131314] text-[#e3e3e3] h-full flex overflow-hidden">
+
+    <div id="drawer-backdrop" onclick="toggleDrawer(false)" class="fixed inset-0 bg-black/50 z-40 hidden transition-opacity"></div>
+
+    <aside id="app-drawer" class="fixed inset-y-0 left-0 w-72 bg-[#1e1f20] z-50 flex flex-col transform -translate-x-full transition-transform duration-300 ease-in-out border-r border-[#2b2d31]">
+
+        <div class="flex items-center justify-between px-4 py-4 border-b border-[#2b2d31]">
+            <span class="text-lg font-semibold text-white flex items-center gap-2">
+                <i class="fa-solid fa-sparkles text-blue-400"></i> Xinon
+            </span>
+            <button onclick="toggleDrawer(false)" class="text-gray-400 hover:text-white p-2 rounded-full hover:bg-[#2b2d31] transition">
+                <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+        </div>
+
+        <div class="flex-1 overflow-y-auto px-3 py-4 space-y-1">
+            <button onclick="startNewChat()" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-full bg-[#282a2c] hover:bg-[#333538] text-white text-sm font-medium transition mb-4">
+                <i class="fa-solid fa-plus text-blue-400"></i> New chat
+            </button>
+
+            <div class="text-xs font-semibold text-gray-400 px-3 pb-2 uppercase tracking-wider">Recent</div>
+
+            <!-- Dynamic PostgreSQL chat history -->
+            <div id="recent-chats" class="space-y-1 text-sm text-gray-300">
+                <div class="px-3 py-2 text-gray-500 text-xs">Loading chats...</div>
+            </div>
+        </div>
+
+        <div class="p-3 border-t border-[#2b2d31] bg-[#1e1f20] space-y-2">
+            <div class="flex items-center gap-2">
+                <a href="https://t.me/REDXinon" target="_blank" class="flex-1 bg-[#282a2c] hover:bg-[#333538] text-white text-xs font-medium py-2.5 px-3 rounded-full text-center truncate transition flex items-center justify-center gap-1.5">
+                    <i class="fa-brands fa-telegram text-blue-400"></i> KOD CHANNEL
+                </a>
+
+                <a href="https://t.me/REDXinon" target="_blank" class="bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold py-2.5 px-4 rounded-full text-center transition shadow-md">
+                    Upgrade
+                </a>
+
+                <button onclick="openSettings()" class="text-gray-300 hover:text-white p-2.5 rounded-full hover:bg-[#282a2c] transition">
+                    <i class="fa-solid fa-gear text-base"></i>
+                </button>
+            </div>
+        </div>
+    </aside>
+
+    <div id="settings-modal" class="fixed inset-0 bg-[#131314] z-50 hidden flex flex-col">
+        <div class="flex items-center px-4 py-3 border-b border-[#2b2d31] bg-[#1e1f20]">
+            <button onclick="closeSettings()" class="text-gray-300 hover:text-white p-2 rounded-full hover:bg-[#2b2d31] transition mr-3">
+                <i class="fa-solid fa-arrow-left text-lg"></i>
+            </button>
+            <h2 class="text-lg font-semibold text-white">Settings</h2>
+        </div>
+
+        <div class="flex-1 overflow-y-auto max-w-2xl w-full mx-auto p-4 space-y-6">
+            <a href="https://t.me/REDXinon" target="_blank" class="block bg-[#1e1f20] border border-[#2b2d31] hover:border-gray-500 p-4 rounded-2xl transition shadow-sm">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <i class="fa-brands fa-telegram text-blue-400 text-xl"></i>
+                        <div>
+                            <div class="text-sm font-medium text-white">Upgrade to VIP (Contact Telegram)</div>
+                            <div class="text-xs text-gray-400">Get unlimited code generation and premium access</div>
+                        </div>
+                    </div>
+                    <i class="fa-solid fa-chevron-right text-gray-400 text-sm"></i>
+                </div>
+            </a>
+
+            <div class="space-y-2">
+                <label class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Your Device ID (Send this to Owner for VIP)</label>
+                <div class="flex items-center bg-[#1e1f20] border border-[#2b2d31] rounded-xl px-4 py-3">
+                    <input type="text" id="setting-device-id" readonly class="w-full bg-transparent text-white text-sm font-mono focus:outline-none select-all" value="">
+                    <button onclick="copyDeviceId()" class="ml-2 text-xs bg-[#2b2d31] hover:bg-[#3c4043] text-white px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 shrink-0">
+                        <i class="fa-regular fa-copy"></i> Copy
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="flex-1 flex flex-col h-full w-full relative">
+
+        <header class="flex items-center justify-between px-4 py-3 border-b border-[#2b2d31] bg-[#131314] shrink-0">
+            <div class="flex items-center space-x-3">
+                <button onclick="toggleDrawer(true)" class="text-gray-300 hover:text-white p-2 rounded-full hover:bg-[#2b2d31] transition">
+                    <i class="fa-solid fa-bars text-lg"></i>
+                </button>
+
+                <span class="text-lg font-semibold tracking-wide text-white flex items-center gap-2">
+                    Xinon
+                </span>
+            </div>
+
+            <div class="flex items-center space-x-2">
+                <a href="/" class="text-sm bg-[#1e1f20] hover:bg-[#2b2d31] px-3 py-1.5 rounded-lg text-gray-300 transition flex items-center gap-1.5">
+                    <i class="fa-solid fa-house"></i> Home
+                </a>
+            </div>
+        </header>
+
+        <main id="chat-container" class="flex-1 overflow-y-auto px-4 py-6 space-y-6 max-w-3xl w-full mx-auto">
+
+            <div id="welcome-screen" class="flex flex-col items-center justify-center h-full text-center space-y-4">
+                <div class="w-12 h-12 rounded-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 flex items-center justify-center text-white text-xl shadow-lg">
+                    <i class="fa-solid fa-sparkles"></i>
+                </div>
+
+                <h1 class="text-3xl md:text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400">
+                    Hello, Boss
+                </h1>
+
+                <p class="text-gray-400 text-sm md:text-base">How can Xinon help you today?</p>
+            </div>
+
+            <div id="chat-messages" class="space-y-6 hidden"></div>
+        </main>
+
+        <div class="shrink-0 max-w-3xl w-full mx-auto px-4 pb-4 pt-2">
+
+            <div id="image-preview-container" class="hidden mb-2 relative inline-block">
+                <img id="image-preview" src="" alt="Preview" class="h-20 w-20 object-cover rounded-xl border border-gray-700">
+                <button onclick="removeImage()" class="absolute -top-2 -right-2 bg-gray-800 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600 transition">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <div class="bg-[#1e1f20] rounded-3xl p-3 border border-[#2b2d31] focus-within:border-gray-500 transition shadow-lg">
+
+                <textarea
+                    id="user-input"
+                    rows="1"
+                    placeholder="Enter a prompt here..."
+                    class="w-full bg-transparent text-white placeholder-gray-400 focus:outline-none resize-none px-2 max-h-36 text-sm md:text-base leading-relaxed"
+                    oninput="autoResize(this)"
+                ></textarea>
+
+                <div class="flex items-center justify-between mt-2 pt-2 border-t border-gray-700/40">
+                    <div class="flex items-center space-x-2">
+                        <label for="image-input" class="cursor-pointer text-gray-400 hover:text-white p-2 rounded-full hover:bg-gray-700/50 transition inline-flex items-center justify-center">
+                            <i class="fa-solid fa-image text-lg pointer-events-none"></i>
+                        </label>
+
+                        <input type="file" id="image-input" accept="image/*" class="hidden" onchange="previewImage(event)">
+                    </div>
+
+                    <button id="send-btn" onclick="sendMessage()" class="bg-white text-black hover:bg-gray-200 p-2.5 rounded-full w-9 h-9 flex items-center justify-center transition disabled:opacity-40 disabled:cursor-not-allowed">
+                        <i class="fa-solid fa-arrow-up text-sm"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div class="text-center mt-2">
+                <span class="text-[11px] text-gray-500">Xinon may display inaccurate info. Verify important facts.</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let selectedImageFile = null;
+        let currentConversationId = null;
+
+        function toggleDrawer(open) {
+            const drawer = document.getElementById('app-drawer');
+            const backdrop = document.getElementById('drawer-backdrop');
+
+            if (open) {
+                drawer.classList.remove('-translate-x-full');
+                backdrop.classList.remove('hidden');
+                loadRecentChats();
+            } else {
+                drawer.classList.add('-translate-x-full');
+                backdrop.classList.add('hidden');
+            }
+        }
+
+        function openSettings() {
+            toggleDrawer(false);
+            document.getElementById('setting-device-id').value = getDeviceId();
+            document.getElementById('settings-modal').classList.remove('hidden');
+        }
+
+        function closeSettings() {
+            document.getElementById('settings-modal').classList.add('hidden');
+        }
+
+        function copyDeviceId() {
+            const input = document.getElementById('setting-device-id');
+            input.select();
+            navigator.clipboard.writeText(input.value);
+            alert("Device ID copied to clipboard!");
+        }
+
+        function startNewChat() {
+            currentConversationId = null;
+
+            document.getElementById('chat-messages').innerHTML = '';
+            document.getElementById('chat-messages').classList.add('hidden');
+            document.getElementById('welcome-screen').classList.remove('hidden');
+
+            toggleDrawer(false);
+        }
+
+        function autoResize(textarea) {
+            textarea.style.height = 'auto';
+            textarea.style.height = textarea.scrollHeight + 'px';
+        }
+
+        function previewImage(event) {
+            const file = event.target.files[0];
+
+            if (file) {
+                selectedImageFile = file;
+
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    document.getElementById('image-preview').src = e.target.result;
+                    document.getElementById('image-preview-container').classList.remove('hidden');
+                };
+
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function removeImage() {
+            selectedImageFile = null;
+            document.getElementById('image-input').value = '';
+            document.getElementById('image-preview-container').classList.add('hidden');
+        }
+
+        function getDeviceId() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const urlDeviceId = urlParams.get('device_id');
+
+            if (urlDeviceId) {
+                localStorage.setItem('saved_device_id', urlDeviceId);
+                return urlDeviceId;
+            }
+
+            const savedId = localStorage.getItem('saved_device_id');
+
+            if (savedId) {
+                return savedId;
+            }
+
+            try {
+                if (window.Android && window.Android.getDeviceId) {
+                    const androidId = window.Android.getDeviceId();
+
+                    if (androidId) {
+                        localStorage.setItem('saved_device_id', androidId);
+                        return androidId;
+                    }
+                }
+            } catch (e) {}
+
+            // Browser fallback: create a unique ID instead of using one shared ID.
+            const browserId = 'web-' + crypto.randomUUID();
+            localStorage.setItem('saved_device_id', browserId);
+            return browserId;
+        }
+
+        function getUserId() {
+            return 7094887417;
+        }
+
+        function escapeHtml(text) {
+            const map = {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;'
+            };
+
+            return text.replace(/[&<>"']/g, function(m) {
+                return map[m];
+            });
+        }
+
+        function processAiContent(htmlText) {
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = marked.parse(htmlText);
+
+            const images = tempDiv.querySelectorAll('img');
+
+            images.forEach(img => {
+                const src = img.src;
+
+                const card = document.createElement('div');
+                card.className = 'ai-image-card';
+
+                card.innerHTML = `
+                    <img src="${src}" alt="Generated AI Image" loading="lazy">
+                    <div class="ai-image-actions">
+                        <span class="text-xs text-gray-400 font-medium">Generated Image</span>
+                        <button onclick="downloadImage('${src}')" class="bg-blue-600 hover:bg-blue-500 text-white text-xs px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 shadow cursor-pointer">
+                            <i class="fa-solid fa-download"></i> Save Image
+                        </button>
+                    </div>
+                `;
+
+                img.replaceWith(card);
+            });
+
+            return tempDiv.innerHTML;
+        }
+
+        async function downloadImage(imgUrl) {
+            try {
+                alert("Downloading image...");
+
+                const response = await fetch(imgUrl);
+                const blob = await response.blob();
+                const blobUrl = window.URL.createObjectURL(blob);
+
+                const a = document.createElement('a');
+                a.style.display = 'none';
+                a.href = blobUrl;
+                a.download = `xinon_image_${Date.now()}.jpg`;
+
+                document.body.appendChild(a);
+                a.click();
+
+                window.URL.revokeObjectURL(blobUrl);
+                document.body.removeChild(a);
+            } catch (error) {
+                window.open(imgUrl, '_blank');
+            }
+        }
+
+        function scrollToBottom() {
+            const container = document.getElementById('chat-container');
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function addUserMessage(content, imageUrl = null) {
+            const chatMessages = document.getElementById('chat-messages');
+
+            const userMsgDiv = document.createElement('div');
+            userMsgDiv.className = 'flex justify-end';
+
+            const imageHtml = imageUrl
+                ? `<img src="${imageUrl}" class="max-w-xs rounded-xl mb-2">`
+                : '';
+
+            userMsgDiv.innerHTML = `
+                <div class="bg-[#2b2d31] text-white px-4 py-3 rounded-2xl max-w-[80%] text-sm md:text-base">
+                    ${imageHtml}
+                    <p class="whitespace-pre-wrap">${escapeHtml(content || '')}</p>
+                </div>
+            `;
+
+            chatMessages.appendChild(userMsgDiv);
+        }
+
+        function addAssistantMessage(content) {
+            const chatMessages = document.getElementById('chat-messages');
+
+            const aiMsgDiv = document.createElement('div');
+            aiMsgDiv.className = 'flex space-x-3 items-start';
+
+            aiMsgDiv.innerHTML = `
+                <div class="w-8 h-8 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center text-white text-xs shrink-0 mt-1">
+                    <i class="fa-solid fa-sparkles"></i>
+                </div>
+
+                <div class="flex-1 space-y-2 overflow-hidden">
+                    <div class="font-semibold text-sm text-gray-300">Xinon</div>
+                    <div class="message-content text-gray-200 text-sm md:text-base leading-relaxed"></div>
+                </div>
+            `;
+
+            aiMsgDiv.querySelector('.message-content').innerHTML =
+                processAiContent(content || '');
+
+            chatMessages.appendChild(aiMsgDiv);
+
+            return aiMsgDiv.querySelector('.message-content');
+        }
+
+        function showChatArea() {
+            document.getElementById('welcome-screen').classList.add('hidden');
+            document.getElementById('chat-messages').classList.remove('hidden');
+        }
+
+        async function loadRecentChats() {
+            const recent = document.getElementById('recent-chats');
+            recent.innerHTML =
+                '<div class="px-3 py-2 text-gray-500 text-xs">Loading chats...</div>';
+
+            try {
+                const device_id = getDeviceId();
+                const user_id = getUserId();
+
+                const response = await fetch(
+                    `/api/conversations?device_id=${encodeURIComponent(device_id)}&user_id=${encodeURIComponent(user_id)}`
+                );
+
+                if (!response.ok) {
+                    throw new Error('Could not load conversations');
+                }
+
+                const data = await response.json();
+                const conversations = data.conversations || [];
+
+                if (!conversations.length) {
+                    recent.innerHTML =
+                        '<div class="px-3 py-2 text-gray-500 text-xs">No chats yet</div>';
+                    return;
+                }
+
+                recent.innerHTML = '';
+
+                conversations.forEach(chat => {
+                    const item = document.createElement('div');
+
+                    item.className =
+                        'group flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-[#2b2d31] cursor-pointer transition';
+
+                    const title = document.createElement('div');
+                    title.className = 'flex-1 truncate';
+                    title.textContent = chat.title || 'New chat';
+
+                    const deleteButton = document.createElement('button');
+                    deleteButton.className =
+                        'hidden group-hover:block text-gray-500 hover:text-red-400 p-1';
+                    deleteButton.innerHTML =
+                        '<i class="fa-solid fa-trash text-xs"></i>';
+
+                    deleteButton.onclick = (event) => {
+                        event.stopPropagation();
+                        deleteConversation(chat.id);
+                    };
+
+                    item.appendChild(title);
+                    item.appendChild(deleteButton);
+
+                    item.onclick = () => {
+                        loadConversation(chat.id);
+                    };
+
+                    recent.appendChild(item);
+                });
+
+            } catch (error) {
+                recent.innerHTML =
+                    '<div class="px-3 py-2 text-red-400 text-xs">Could not load chats</div>';
+                console.error(error);
+            }
+        }
+
+        async function loadConversation(conversationId) {
+            try {
+                const device_id = getDeviceId();
+                const user_id = getUserId();
+
+                const response = await fetch(
+                    `/api/conversations/${conversationId}/messages?device_id=${encodeURIComponent(device_id)}&user_id=${encodeURIComponent(user_id)}`
+                );
+
+                if (!response.ok) {
+                    throw new Error('Could not load conversation');
+                }
+
+                const data = await response.json();
+
+                currentConversationId = conversationId;
+
+                const chatMessages = document.getElementById('chat-messages');
+                chatMessages.innerHTML = '';
+
+                showChatArea();
+
+                (data.messages || []).forEach(message => {
+                    if (message.role === 'user') {
+                        addUserMessage(message.content);
+                    } else if (message.role === 'assistant') {
+                        addAssistantMessage(message.content);
+                    }
+                });
+
+                scrollToBottom();
+                toggleDrawer(false);
+
+            } catch (error) {
+                console.error(error);
+                alert('Could not load this chat.');
+            }
+        }
+
+        async function deleteConversation(conversationId) {
+            if (!confirm('Delete this chat?')) return;
+
+            try {
+                const device_id = getDeviceId();
+                const user_id = getUserId();
+
+                const response = await fetch(
+                    `/api/conversations/${conversationId}?device_id=${encodeURIComponent(device_id)}&user_id=${encodeURIComponent(user_id)}`,
+                    { method: 'DELETE' }
+                );
+
+                if (!response.ok) {
+                    throw new Error('Delete failed');
+                }
+
+                if (currentConversationId === conversationId) {
+                    startNewChat();
+                }
+
+                await loadRecentChats();
+
+            } catch (error) {
+                console.error(error);
+                alert('Could not delete this chat.');
+            }
+        }
+
+        async function sendMessage() {
+            const inputField = document.getElementById('user-input');
+            const promptText = inputField.value.trim();
+
+            if (!promptText && !selectedImageFile) return;
+
+            showChatArea();
+
+            const currentImage = selectedImageFile;
+            const imagePreviewUrl = currentImage
+                ? URL.createObjectURL(currentImage)
+                : null;
+
+            addUserMessage(promptText, imagePreviewUrl);
+
+            inputField.value = '';
+            inputField.style.height = 'auto';
+            removeImage();
+
+            scrollToBottom();
+
+            const chatMessages = document.getElementById('chat-messages');
+
+            const aiMsgDiv = document.createElement('div');
+            aiMsgDiv.className = 'flex space-x-3 items-start';
+
+            aiMsgDiv.innerHTML = `
+                <div class="w-8 h-8 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center text-white text-xs shrink-0 mt-1">
+                    <i class="fa-solid fa-sparkles"></i>
+                </div>
+
+                <div class="flex-1 space-y-2 overflow-hidden">
+                    <div class="font-semibold text-sm text-gray-300">Xinon</div>
+                    <div class="message-content text-gray-200 text-sm md:text-base leading-relaxed">
+                        <span class="inline-block animate-pulse">Thinking...</span>
+                    </div>
+                </div>
+            `;
+
+            chatMessages.appendChild(aiMsgDiv);
+            scrollToBottom();
+
+            const messageContentEl =
+                aiMsgDiv.querySelector('.message-content');
+
+            try {
+                const device_id = getDeviceId();
+                const user_id = getUserId();
+
+                let response;
+
+                if (currentImage) {
+                    const formData = new FormData();
+
+                    formData.append('prompt', promptText);
+                    formData.append('device_id', device_id);
+                    formData.append('user_id', user_id);
+                    formData.append('conversation_id', currentConversationId || '');
+                    formData.append('image', currentImage);
+
+                    response = await fetch('/api/chat', {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                } else {
+                    response = await fetch('/api/chat', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            prompt: promptText,
+                            device_id: device_id,
+                            user_id: user_id,
+                            conversation_id: currentConversationId
+                        })
+                    });
+                }
+
+                if (!response.ok) {
+                    throw new Error(await response.text());
+                }
+
+                // The backend creates a conversation on the first message.
+                // The ID is returned in the response header.
+                const returnedConversationId =
+                    response.headers.get('X-Conversation-Id');
+
+                if (returnedConversationId) {
+                    currentConversationId = parseInt(
+                        returnedConversationId,
+                        10
+                    );
+                }
+
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+
+                let fullText = '';
+
+                while (true) {
+                    const { done, value } = await reader.read();
+
+                    if (done) break;
+
+                    fullText += decoder.decode(value, {
+                        stream: true
+                    });
+
+                    messageContentEl.innerHTML =
+                        processAiContent(fullText);
+
+                    scrollToBottom();
+                }
+
+                // Refresh Recent so the current chat moves to the top.
+                await loadRecentChats();
+
+            } catch (error) {
+                console.error(error);
+
+                messageContentEl.innerHTML =
+                    `<span class="text-red-400">Error connecting to server. Please try again.</span>`;
+            }
+        }
+
+        // Load recent chats when the page opens.
+        document.addEventListener('DOMContentLoaded', () => {
+            getDeviceId();
+            loadRecentChats();
+        });
+    </script>
+</body>
+</html>
