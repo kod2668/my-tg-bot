@@ -1,7 +1,6 @@
-google-genai
-pillow
-flask
+Flask
 flask-cors
-Flask-SQLAlchemy
-werkzeug
 psycopg[binary]
+google-genai
+google-auth
+gunicorn
